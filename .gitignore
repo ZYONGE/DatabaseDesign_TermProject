@@ -1,0 +1,20 @@
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Java build files
+*.class
+*.jar
+
+# IDE specific
+.idea/
+.vscode/
+
+# Build directories
+/bin/
+/out/
+/target/
+
+# Logs and temp files
+*.log
+*.tmp
