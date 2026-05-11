@@ -98,7 +98,6 @@
 | 컬럼명 | 타입 | 제약 | 설명 |
 |--------|------|------|------|
 | `bicycle_id` | INT | PK, AUTO_INCREMENT | 자전거 ID |
-| `serial_no` | VARCHAR(50) | NOT NULL, UNIQUE | 일련번호 |
 | `type_id` | INT | FK → BicycleType, NOT NULL | 자전거 종류 |
 | `bike_status` | ENUM | DEFAULT '정상' | 정상 / 대여중 / 정비중 / 분실 / 회수중 |
 | `current_station_id` | INT | FK → Station, NULL 허용 | 현재 위치 대여소 (대여중·정비중·분실·회수중 시 NULL) |
@@ -118,7 +117,6 @@
 | `birth_date` | DATE | NOT NULL | 생년월일 |
 | `phone` | VARCHAR(20) | NOT NULL, UNIQUE | 연락처 |
 | `address` | VARCHAR(255) | | 주소 |
-| `is_minor` | TINYINT(1) | DEFAULT 0 | 초등학생 이하 여부 (1=미성년, 매년 배치로 갱신) |
 | `user_status` | ENUM | DEFAULT '정상' | 정상 / 정지 |
 | `created_at` | DATETIME | DEFAULT NOW() | 등록일시 |
 
@@ -319,7 +317,7 @@ erDiagram
 2. 해당 사용자의 `Rental.rental_status = '대여중'`인 레코드가 없어야 함 (1인 1대 제한)
 3. 해당 사용자의 `Penalty` 중 `ban_start ≤ CURRENT_DATE AND (ban_end IS NULL OR ban_end ≥ CURRENT_DATE)`인 레코드가 없어야 함
 4. `Bicycle.bike_status = '정상'`이어야 함
-5. `User.is_minor = 1`인 경우 `BicycleType.type_name = '어린이'` 자전거만 대여 가능
+5. `TIMESTAMPDIFF(YEAR, User.birth_date, CURRENT_DATE) < 13`(만 13세 미만, 초등학생 이하)인 경우 `BicycleType.type_name = '어린이'` 자전거만 대여 가능
 
 > 조건 3은 `Penalty` 테이블을 직접 조회한다. `User.user_status`만으로는 패널티 만료 여부를 정확히 판단할 수 없다.
 
@@ -465,9 +463,9 @@ Allocation INSERT
 
 ### 7.8 초등학생 이하 이용 제한
 
-- `User.is_minor = 1`이면 `BicycleType.type_name = '어린이'` 자전거만 대여 가능
+- `TIMESTAMPDIFF(YEAR, User.birth_date, CURRENT_DATE) < 13`(만 13세 미만)이면 `BicycleType.type_name = '어린이'` 자전거만 대여 가능
 - 어린이 자전거의 `max_passenger = 1`
-- `is_minor`는 매년 배치 작업으로 `birth_date` 기준 재계산하여 갱신한다.
+- 연령 판정은 대여 시점에 `birth_date`로 실시간 계산한다. `is_minor` 컬럼은 `user_id → birth_date → is_minor` 이행적 함수 종속에 해당하므로 3NF 준수를 위해 제거하였다.
 
 ---
 
@@ -499,6 +497,7 @@ Allocation INSERT
 | `BicycleType` | `Bicycle` 내 `type_name`, `max_passenger`, `inspection_cycle` 반복 | `Bicycle → type_id → {type_name, max_passenger, ...}` 제거 |
 | `Penalty` | `Rental` 또는 `User` 내 패널티 정보 포함 시 | 독립적 패널티 이력 관리로 이행 종속 제거 |
 | `Maintenance` | `IncidentReport` 내 정비 정보 포함 시 | 신고 없이도 정기점검 독립 생성 가능 |
+| `User.is_minor` 제거 | `User` 내 `is_minor` 저장 시 | `user_id → birth_date → is_minor` 이행적 종속 제거 — 대여 시점 `birth_date` 실시간 계산으로 대체 |
 
 ### 8.3 의도적 비정규화 (성능 최적화)
 
