@@ -22,7 +22,7 @@ Final team project for the **Database Design** course
 
 This repository contains the MySQL 8.0 relational database design and implementation for a **public bicycle rental service in Siheung City (시흥시)**, Gyeonggi Province.
 
-The system models the full service lifecycle — from member registration and bicycle rental to payment processing, mileage management, incident reporting, and bicycle retrieval — using **14 normalized entities**.
+The system models the full service lifecycle — from member registration and bicycle rental to incident reporting and bicycle retrieval — using **12 normalized entities**.
 
 ---
 
@@ -51,34 +51,32 @@ The system models the full service lifecycle — from member registration and bi
 This database design covers the following core functions:
 
 - **Member Management** — sign-up, account status, and suspension handling
-- **Bicycle & Dock Management** — inventory, real-time status, and placement tracking
+- **Bicycle Management** — inventory, status, and type management (standard / children's / tandem)
+- **Station Management** — regional stations and real-time placement tracking
 - **Rental & Return** — start/end station, elapsed time, and distance calculation
-- **Payment & Mileage** — charge settlement and point earn/use/history management
-- **Fare Policy Management** — base fare, per-minute rate, and versioned policy history
+- **Penalty System** — automated penalty (ban period) for unreturned bicycles
 - **Operations Management** — maintenance logs, incident reports, and admin staff records
-- **User Experience** — post-rental reviews and ratings
-- **Bicycle Retrieval** — out-of-area and abandoned bicycle retrieval history
+- **Bicycle Retrieval** — GPS-based out-of-area detection and abandoned bicycle retrieval
+- **Bicycle Allocation** — demand-driven placement strategy and allocation history
 
 ---
 
-## Entity List (14 tables)
+## Entity List (12 tables)
 
 | # | Entity | Description |
 |---|--------|-------------|
 | 1 | `Region` | Administrative district (동 unit) |
-| 2 | `Station` | Rental station |
-| 3 | `Dock` | Individual bicycle slot |
+| 2 | `BicycleType` | Bicycle type (standard / children's / tandem) |
+| 3 | `Station` | Rental station |
 | 4 | `Bicycle` | Bicycle entity |
-| 5 | `FarePolicy` | Fare policy version |
-| 6 | `User` | Service member |
+| 5 | `User` | Service member |
+| 6 | `AdminStaff` | Operations staff |
 | 7 | `Rental` | Rental history |
-| 8 | `Payment` | Payment history |
-| 9 | `MileageHistory` | Mileage earn/use history |
-| 10 | `Review` | Rental review |
-| 11 | `AdminStaff` | Operations staff |
-| 12 | `IncidentReport` | Incident / complaint report |
-| 13 | `Maintenance` | Maintenance history |
-| 14 | `Retrieve` | Bicycle retrieval history |
+| 8 | `IncidentReport` | Incident / complaint report |
+| 9 | `Maintenance` | Maintenance history |
+| 10 | `Retrieve` | Bicycle retrieval history |
+| 11 | `Penalty` | Unreturned bicycle penalty |
+| 12 | `Allocation` | Bicycle placement history |
 
 ---
 
