@@ -4,14 +4,17 @@
 
 1. 경기도 시흥시의 열악한 교통환경을 개선하기 위해 시민 대상 공공 자전거 대여 서비스를 기획한다.
 2. 서비스 운영에 필요한 엔터티를 **12개** 정의하고, MySQL 8.0 기반 관계형 데이터베이스를 설계한다.
-3. 시흥시 전역(동 단위)으로 서비스 확장을 가정하여 지역별 수요, 대여소, 자전거, 운영 인력을 통합 관리한다.
-4. 기본 이용은 **무료**이며, 미반납 시 **미납일수 × 10일** 대여 금지 패널티가 발생하고 만료 후 자동 해제된다.
+3. 시흥시 전역 관광지·교통 요지에 **유인 대여소**를 설치하고, 각 대여소에 `AdminStaff`를 상주시켜 운영한다.
+4. 시민은 회원 가입 후 대여소에서 자전거를 대여하며, **반납은 시흥시 내 모든 대여소**에서 가능하다.
+5. 자전거 종류는 **일반(1인)**, **2인용**, **어린이** 3종으로 구분한다. 어린이 자전거는 만 13세 미만(초등학생 이하)만 대여 가능하며, 연령은 `User.birth_date` 기준 대여 시점에 실시간으로 계산한다.
+6. 기본 이용은 **무료**이며, 미반납 시 **미납일수 × 10일** 대여 금지 패널티가 발생하고 만료 후 자동 해제된다.
+7. 자전거 단말기가 GPS 위치를 주기적으로 갱신하며, 시흥시 경계 이탈 감지 시 자동으로 회수 프로세스가 시작된다.
 
 ---
 
 ## 2. 설계 목표
 
-- 지역(동)별 인구 밀집도와 이용 수요를 반영한 자전거 배치 전략 지원
+- 시흥시가 외부적으로 보유한 지역별 수요 데이터를 기반으로 관리자가 자전거 배치 전략을 수립할 수 있도록 배치 이력(`Allocation`) 관리 지원 (수요 데이터 자체는 본 DB에 저장하지 않음)
 - 사용자 가입부터 대여, 반납까지 전 과정 데이터 추적
 - 유지보수와 고장 신고를 포함한 운영 관제 데이터 축적
 - 확장 가능한 스키마 구조 (제3정규형 기반) 확보
@@ -42,7 +45,7 @@
 | 3 | `Station` | 대여소 |
 | 4 | `Bicycle` | 자전거 개체 |
 | 5 | `User` | 서비스 이용자 |
-| 6 | `AdminStaff` | 운영 관리자 / 정비사 / 운영요원 |
+| 6 | `AdminStaff` | 운영 관리자 |
 | 7 | `Rental` | 대여 이력 |
 | 8 | `IncidentReport` | 고장 / 민원 신고 |
 | 9 | `Maintenance` | 정비 이력 |
@@ -73,6 +76,8 @@
 | `max_passenger` | TINYINT | NOT NULL, DEFAULT 1 | 최대 탑승 인원 |
 | `inspection_cycle` | INT | NOT NULL, DEFAULT 30 | 점검 주기 (일) |
 | `description` | TEXT | | 종류 설명 |
+
+> 종류별 `max_passenger` 기본값: 일반 `1`, 어린이 `1`, 2인용 `2`. 어린이 자전거는 만 13세 미만 사용자만 대여 가능하다.
 
 ---
 
@@ -129,8 +134,7 @@
 | `staff_id` | INT | PK, AUTO_INCREMENT | 관리자 ID |
 | `staff_name` | VARCHAR(50) | NOT NULL | 성명 |
 | `phone` | VARCHAR(20) | NOT NULL, UNIQUE | 연락처 |
-| `role` | ENUM | NOT NULL | 관리자 / 정비사 / 운영요원 |
-| `station_id` | INT | FK → Station, NULL 허용 | 담당 대여소 (관리자는 NULL 가능) |
+| `station_id` | INT | FK → Station, NULL 허용 | 담당 대여소 |
 | `is_active` | TINYINT(1) | DEFAULT 1 | 재직 여부 |
 | `created_at` | DATETIME | DEFAULT NOW() | 등록일시 |
 
@@ -284,9 +288,9 @@ erDiagram
 | 2 | Region | Allocation | 1:N | `Allocation.region_id` | 지역 단위 배치 관리 |
 | 3 | BicycleType | Bicycle | 1:N | `Bicycle.type_id` | 종류별 자전거 분류 |
 | 4 | Station | Bicycle | 1:N | `Bicycle.current_station_id` | 현재 위치 (NULL 가능) |
-| 5 | Station | AdminStaff | 1:N | `AdminStaff.station_id` | 담당 대여소 (NULL 가능) |
+| 5 | Station | AdminStaff | 1:N | `AdminStaff.station_id` | 담당 대여소 (관리자 역할은 NULL 가능) |
 | 6 | Station | Rental | 1:N | `Rental.start_station_id` | 대여 시작 대여소 |
-| 7 | Station | Rental | 1:N | `Rental.end_station_id` | 반납 대여소 (NULL 가능) |
+| 7 | Station | Rental | 1:N | `Rental.end_station_id` | 반납 대여소 (NULL 가능, 대여중) |
 | 8 | Station | Retrieve | 1:N | `Retrieve.target_station_id` | 회수 목표 대여소 |
 | 9 | Station | Allocation | 1:N | `Allocation.station_id` | 배치 대여소 (NULL 가능) |
 | 10 | Bicycle | Rental | 1:N | `Rental.bicycle_id` | 자전거 대여 이력 |
@@ -338,10 +342,12 @@ erDiagram
 
 ### 7.3 반납 처리 흐름
 
+> 반납은 대여 시작 대여소에 국한하지 않고, **시흥시 내 모든 운영 중인 대여소**에서 가능하다.
+
 ```
 [반납 요청]
   └─▶ Rental UPDATE
-        end_station_id = 반납 대여소
+        end_station_id = 반납 대여소 (시흥시 내 임의 운영 중 대여소)
         end_time = NOW()
         duration_min = TIMESTAMPDIFF(MINUTE, start_time, end_time)
         rental_status → '반납'
@@ -477,6 +483,8 @@ Allocation INSERT
 | `정비사` | Maintenance 생성 및 처리 |
 | `운영요원` | Retrieve 처리, Allocation 실행 |
 
+> 유인 대여소 운영 원칙: `station_status = '운영중'`인 모든 Station에는 `정비사` 또는 `운영요원` 역할의 `AdminStaff`가 1명 이상 배정(`station_id` 지정)되어야 한다. `관리자` 역할은 전사 관리 업무를 담당하므로 `station_id = NULL`이 허용된다.
+
 ---
 
 ## 8. 정규화 요약
@@ -527,6 +535,6 @@ Allocation INSERT
 ## 10. 기대 효과
 
 - 시민 이동 편의 향상 및 단거리 이동 교통 분산
-- 데이터 기반 자전거 배치·정비 의사결정 가능 (`Allocation`, `Maintenance` 집계)
+- 외부 수요 데이터를 활용한 관리자 자전거 배치 의사결정 지원 (`Allocation` 집계)
 - 운영 효율화: 신고-정비-회수 연계로 자전거 가동률 극대화
 - 패널티 자동화로 미반납 억제 및 자전거 회전율 향상
