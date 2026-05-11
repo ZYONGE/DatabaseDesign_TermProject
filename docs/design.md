@@ -178,16 +178,18 @@
 
 ### 5.9 Maintenance (정비 이력)
 
+> 자전거 정비는 **외부 업체(외주)에 위탁**하여 진행한다. 본 테이블은 "정비를 외주에 맡겼다"는 사실과 자전거 반납 결과만을 기록하며, 외주 업체의 작업자·정비 방법은 관리하지 않는다.
+
 | 컬럼명 | 타입 | 제약 | 설명 |
 |--------|------|------|------|
 | `maintenance_id` | INT | PK, AUTO_INCREMENT | 정비 ID |
 | `bicycle_id` | INT | FK → Bicycle, NOT NULL | 정비 자전거 |
-| `staff_id` | INT | FK → AdminStaff, NOT NULL | 담당 정비사 |
-| `incident_id` | INT | FK → IncidentReport, NULL 허용 | 연계 신고 (정기점검 시 NULL) |
+| `incident_id` | INT | FK → IncidentReport, NULL 허용 | 연계 신고 (정기점검 의뢰 시 NULL) |
 | `maintenance_type` | ENUM | NOT NULL | 정기점검 / 수리 / 청소 |
-| `description` | TEXT | | 정비 내용 |
-| `started_at` | DATETIME | NOT NULL | 정비 시작 일시 |
-| `ended_at` | DATETIME | NULL 허용 | 정비 완료 일시 |
+| `description` | TEXT | | 정비 의뢰 내용 |
+| `return_station_id` | INT | FK → Station, NULL 허용 | 정비 완료 후 자전거 반납 대여소 (의뢰 시 지정, 완료 시 확정) |
+| `started_at` | DATETIME | NOT NULL | 정비 의뢰 일시 |
+| `ended_at` | DATETIME | NULL 허용 | 정비 완료(자전거 반납) 일시 |
 | `maintenance_status` | ENUM | DEFAULT '진행중' | 진행중 / 완료 |
 
 ---
@@ -256,6 +258,7 @@ erDiagram
     Station ||--o{ Rental : "end_station"
     Station ||--o{ Retrieve : "target_station"
     Station ||--o{ Allocation : "배치대여소"
+    Station ||--o{ Maintenance : "정비반납대여소"
 
     Bicycle ||--o{ Rental : "대여"
     Bicycle ||--o{ IncidentReport : "신고"
@@ -270,7 +273,6 @@ erDiagram
     Rental ||--o| Penalty : "패널티발생"
 
     AdminStaff ||--o{ IncidentReport : "담당배정"
-    AdminStaff ||--o{ Maintenance : "정비담당"
     AdminStaff ||--o{ Retrieve : "회수담당"
     AdminStaff ||--o{ Allocation : "배치담당"
 
@@ -293,20 +295,20 @@ erDiagram
 | 7 | Station | Rental | 1:N | `Rental.end_station_id` | 반납 대여소 (NULL 가능, 대여중) |
 | 8 | Station | Retrieve | 1:N | `Retrieve.target_station_id` | 회수 목표 대여소 |
 | 9 | Station | Allocation | 1:N | `Allocation.station_id` | 배치 대여소 (NULL 가능) |
-| 10 | Bicycle | Rental | 1:N | `Rental.bicycle_id` | 자전거 대여 이력 |
-| 11 | Bicycle | IncidentReport | 1:N | `IncidentReport.bicycle_id` | 자전거 신고 이력 |
-| 12 | Bicycle | Maintenance | 1:N | `Maintenance.bicycle_id` | 자전거 정비 이력 |
-| 13 | Bicycle | Retrieve | 1:N | `Retrieve.bicycle_id` | 자전거 회수 이력 |
-| 14 | Bicycle | Allocation | 1:N | `Allocation.bicycle_id` | 자전거 배치 이력 |
-| 15 | User | Rental | 1:N | `Rental.user_id` | 사용자 대여 이력 |
-| 16 | User | IncidentReport | 1:N | `IncidentReport.user_id` | 사용자 신고 이력 (NULL 가능) |
-| 17 | User | Penalty | 1:N | `Penalty.user_id` | 사용자 패널티 이력 |
-| 18 | Rental | Penalty | 1:0..1 | `Penalty.rental_id` (UNIQUE) | 한 미반납 건당 패널티 1건 |
-| 19 | AdminStaff | IncidentReport | 1:N | `IncidentReport.assigned_staff_id` | 담당 배정 (NULL 가능) |
-| 20 | AdminStaff | Maintenance | 1:N | `Maintenance.staff_id` | 정비 담당자 |
+| 10 | Station | Maintenance | 1:N | `Maintenance.return_station_id` | 외주 정비 완료 후 자전거 반납 대여소 (NULL 가능) |
+| 11 | Bicycle | Rental | 1:N | `Rental.bicycle_id` | 자전거 대여 이력 |
+| 12 | Bicycle | IncidentReport | 1:N | `IncidentReport.bicycle_id` | 자전거 신고 이력 |
+| 13 | Bicycle | Maintenance | 1:N | `Maintenance.bicycle_id` | 자전거 정비 이력 |
+| 14 | Bicycle | Retrieve | 1:N | `Retrieve.bicycle_id` | 자전거 회수 이력 |
+| 15 | Bicycle | Allocation | 1:N | `Allocation.bicycle_id` | 자전거 배치 이력 |
+| 16 | User | Rental | 1:N | `Rental.user_id` | 사용자 대여 이력 |
+| 17 | User | IncidentReport | 1:N | `IncidentReport.user_id` | 사용자 신고 이력 (NULL 가능) |
+| 18 | User | Penalty | 1:N | `Penalty.user_id` | 사용자 패널티 이력 |
+| 19 | Rental | Penalty | 1:0..1 | `Penalty.rental_id` (UNIQUE) | 한 미반납 건당 패널티 1건 |
+| 20 | AdminStaff | IncidentReport | 1:N | `IncidentReport.assigned_staff_id` | 담당 배정 (NULL 가능) |
 | 21 | AdminStaff | Retrieve | 1:N | `Retrieve.staff_id` | 회수 담당자 (NULL 가능) |
 | 22 | AdminStaff | Allocation | 1:N | `Allocation.allocated_by` | 배치 담당자 |
-| 23 | IncidentReport | Maintenance | 1:0..1 | `Maintenance.incident_id` (NULL 가능) | 신고 기반 정비 연계 |
+| 23 | IncidentReport | Maintenance | 1:0..1 | `Maintenance.incident_id` (NULL 가능) | 신고 기반 정비 외주 연계 |
 | 24 | IncidentReport | Retrieve | 1:0..1 | `Retrieve.incident_id` (NULL 가능) | 신고 기반 회수 연계 |
 
 ---
@@ -375,24 +377,26 @@ erDiagram
 
 ### 7.5 신고 유형별 처리 흐름
 
-#### 고장 신고 → 정비 연계
+#### 고장 신고 → 정비 외주 연계
 
 ```
 IncidentReport 접수 (incident_type = '고장')
   └─▶ IncidentReport.incident_status → '처리중'
-      assigned_staff_id 배정 (role = '정비사')
-      └─▶ Maintenance INSERT
-            incident_id = 해당 신고 ID
-            maintenance_type = '수리'
+      assigned_staff_id 배정 (외주 정비 조율 담당 관리자)
+      └─▶ Maintenance INSERT  ← 외주 정비 의뢰 등록
+            incident_id       = 해당 신고 ID
+            maintenance_type  = '수리'
+            return_station_id = 정비 완료 후 자전거를 인수할 대여소 (의뢰 시 지정)
             Bicycle.bike_status → '정비중'
             Bicycle.current_station_id → NULL
-          └─▶ 정비 완료 시
+          └─▶ 외주 업체 정비 완료·자전거 반납 시
                 Maintenance.maintenance_status → '완료'
-                Maintenance.ended_at = NOW()
+                Maintenance.ended_at          = NOW()
+                Maintenance.return_station_id → (미확정이었을 경우 반납 대여소 확정)
                 IncidentReport.incident_status → '완료'
-                IncidentReport.resolved_at = NOW()
-                Bicycle.bike_status → '정상'
-                Bicycle.current_station_id → Maintenance.staff_id의 AdminStaff.station_id
+                IncidentReport.resolved_at     = NOW()
+                Bicycle.bike_status            → '정상'
+                Bicycle.current_station_id     → Maintenance.return_station_id
 ```
 
 #### 방치 신고 → 회수 연계
@@ -479,11 +483,12 @@ Allocation INSERT
 
 | 역할 | 허용 업무 |
 |------|----------|
-| `관리자` | IncidentReport 배정, Retrieve.staff_id 배정, 시스템 전반 관리, Allocation 승인 |
-| `정비사` | Maintenance 생성 및 처리 |
-| `운영요원` | Retrieve 처리, Allocation 실행 |
+| `관리자` | IncidentReport 배정, Retrieve.staff_id 배정, 외주 정비 의뢰 조율, 시스템 전반 관리, Allocation 승인 |
+| `운영요원` | Retrieve 처리, Allocation 실행, 외주 정비 의뢰 생성(Maintenance INSERT) |
 
-> 유인 대여소 운영 원칙: `station_status = '운영중'`인 모든 Station에는 `정비사` 또는 `운영요원` 역할의 `AdminStaff`가 1명 이상 배정(`station_id` 지정)되어야 한다. `관리자` 역할은 전사 관리 업무를 담당하므로 `station_id = NULL`이 허용된다.
+> 유인 대여소 운영 원칙: `station_status = '운영중'`인 모든 Station에는 `운영요원` 역할의 `AdminStaff`가 1명 이상 배정(`station_id` 지정)되어야 한다. `관리자` 역할은 전사 관리 업무를 담당하므로 `station_id = NULL`이 허용된다.
+>
+> **정비 외주 원칙**: 자전거 정비는 외부 업체에 위탁한다. 내부 `AdminStaff`는 정비를 직접 수행하지 않으며, `Maintenance` 테이블에는 외주 업체 담당자 정보를 저장하지 않는다.
 
 ---
 
