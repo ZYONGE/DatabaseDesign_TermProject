@@ -222,7 +222,6 @@
 | `rental_id` | INT | FK → Rental, NOT NULL, UNIQUE | 미반납 대여 건 (건당 1개) |
 | `penalty_days` | INT | NOT NULL | 대여 금지 일수 |
 | `ban_start` | DATE | NOT NULL | 금지 시작일 |
-| `ban_end` | DATE | NULL 허용 | 금지 종료일 (NULL = 영구 금지) |
 | `created_at` | DATETIME | DEFAULT NOW() | 등록일시 |
 
 ---
