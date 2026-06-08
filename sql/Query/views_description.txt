@@ -1,0 +1,103 @@
+================================================================
+  시흥시 공공 자전거 대여 서비스 - VIEW 목록 및 설명
+  DBMS : MySQL 8.0 / InnoDB / utf8mb4
+================================================================
+
+----------------------------------------------------------------
+[VIEW 1] vw_station_bicycle_summary - 대여소별 자전거 현황
+----------------------------------------------------------------
+- 목적 : 대여소마다 자전거 상태를 한눈에 확인 (운영 모니터링용)
+- 참조 테이블 : Station, Region, Bicycle
+- 주요 쿼리 :
+    · JOIN Region → 지역명 포함
+    · LEFT JOIN Bicycle → 자전거 없는 대여소도 포함
+    · COUNT(bicycle_id) → 전체 자전거 수
+    · SUM(CASE WHEN bicycle_status = ...) → 상태별 집계
+      (정상 / 대여중 / 정비중 / 회수중 / 분실)
+    · GROUP BY station_id
+
+----------------------------------------------------------------
+[VIEW 2] vw_active_rentals - 현재 대여중인 자전거 현황
+----------------------------------------------------------------
+- 목적 : 실시간 대여 모니터링 (현재 대여중인 건만 조회)
+- 참조 테이블 : Rental, User, Bicycle, BicycleType, Station
+- 주요 쿼리 :
+    · WHERE rental_status = '대여중' → 진행중인 대여만 필터
+    · TIMESTAMPDIFF(MINUTE, start_time, NOW()) → 경과 시간(분)
+    · CASE WHEN TIMESTAMPDIFF(HOUR ...) >= 24 → '미반납 위험'
+           WHEN >= 12 → '장기 이용'
+           ELSE → '정상' (대여 경고 단계 분류)
+
+----------------------------------------------------------------
+[VIEW 3] vw_active_penalties - 미반납 패널티 대상자 현황
+----------------------------------------------------------------
+- 목적 : 현재 이용 정지 중인 사용자 목록 조회
+- 참조 테이블 : Penalty, User, Rental
+- 주요 쿼리 :
+    · WHERE ban_start <= CURDATE()
+        AND (ban_end IS NULL OR ban_end >= CURDATE())
+      → 현재 날짜 기준 패널티 활성 상태만 필터
+    · DATEDIFF(ban_end, CURDATE()) → 정지 잔여 일수 계산
+
+----------------------------------------------------------------
+[VIEW 4] vw_bicycle_type_summary - 자전거 종류별 가동 현황
+----------------------------------------------------------------
+- 목적 : 자전거 종류별 전체 대수 및 가동률 확인
+- 참조 테이블 : BicycleType, Bicycle
+- 주요 쿼리 :
+    · LEFT JOIN Bicycle → 자전거 없는 타입도 포함
+    · SUM(CASE WHEN bicycle_status = ...) → 상태별 집계
+    · ROUND(대여중 수 / NULLIF(전체 수, 0) * 100, 1)
+      → 가동률(%) 계산 (0으로 나누기 방지에 NULLIF 사용)
+    · GROUP BY bicycleType_id
+
+----------------------------------------------------------------
+[VIEW 5] vw_pending_incidents - 미처리 신고 현황
+----------------------------------------------------------------
+- 목적 : 접수·처리중 상태의 신고 목록 조회 (운영자 대시보드용)
+- 참조 테이블 : IncidentReport, User, Bicycle, BicycleType, AdminStaff
+- 주요 쿼리 :
+    · WHERE incident_status IN ('접수', '처리중') → 미처리 건만 필터
+    · COALESCE(user_name, '관리자 직접 접수')
+      → 사용자 없을 경우 기본값 처리
+    · TIMESTAMPDIFF(HOUR, reported_at, NOW()) → 신고 후 경과 시간
+    · LEFT JOIN AdminStaff → 담당자 미배정 건도 포함
+
+----------------------------------------------------------------
+[VIEW 6] vw_active_retrievals - 진행중인 회수 현황
+----------------------------------------------------------------
+- 목적 : 회수 요원 배정 및 현장 출동 모니터링
+- 참조 테이블 : Retrieve, Bicycle, BicycleType, AdminStaff, Station
+- 주요 쿼리 :
+    · WHERE retrieve_status = '진행중' → 진행중인 회수만 필터
+    · COALESCE(staff_name, '미배정') → 담당자 미배정 시 표시
+    · TIMESTAMPDIFF(HOUR, retrieved_at, NOW()) → 회수 경과 시간
+    · retrieve_latitude, retrieve_longitude → 현재 위치 좌표 포함
+
+----------------------------------------------------------------
+[VIEW 7] vw_bicycle_maintenance - 자전거별 정비 이력
+----------------------------------------------------------------
+- 목적 : 자전거 생애주기 관리 및 잦은 고장 파악
+- 참조 테이블 : Bicycle, BicycleType, Maintenance
+- 주요 쿼리 :
+    · LEFT JOIN Maintenance → 정비 이력 없는 자전거도 포함
+    · COUNT(maintenance_id) → 전체 정비 횟수
+    · SUM(CASE WHEN maintenance_type = ...) → 유형별 집계
+      (수리 / 정기점검 / 청소)
+    · MAX(started_at) → 가장 최근 정비 일시
+    · GROUP BY bicycle_id
+
+----------------------------------------------------------------
+[VIEW 8] vw_user_rental_summary - 사용자 대여 이력 요약
+----------------------------------------------------------------
+- 목적 : 사용자별 총 대여 횟수 및 미반납 이력 확인
+- 참조 테이블 : User, Rental
+- 주요 쿼리 :
+    · LEFT JOIN Rental → 대여 이력 없는 사용자도 포함
+    · COUNT(rental_id) → 전체 대여 횟수
+    · SUM(CASE WHEN rental_status = ...) → 상태별 집계
+      (반납 / 미반납 / 대여중)
+    · MAX(start_time) → 가장 최근 대여 일시
+    · GROUP BY user_id
+
+================================================================
