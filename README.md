@@ -85,8 +85,9 @@ This database design covers the following core functions:
 ```
 데이터베이스설계_기말프로젝트/
 ├── docs/
-│   ├── erd/                 # ERD diagrams (MySQL Workbench .mwb, PNG exports)
-│   └── design.md            # DB design document (entities, relations, triggers)
+│   ├── erd/                 # ERD diagrams (DFD, logical, physical)
+│   ├── design.md            # DB design document (entities, relations, triggers)
+│   └── crud_matrix.md       # CRUD matrix by feature
 ├── sql/
 │   ├── ddl/
 │   │   └── schema.sql       # CREATE TABLE, indexes, triggers
