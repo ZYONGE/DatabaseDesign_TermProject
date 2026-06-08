@@ -179,24 +179,8 @@ ORDER BY bt.bicycleType_id;
 -- [쿼리 7] 미처리 신고 목록 (접수·처리중, 최신 접수순)
 --          운영자가 우선 처리해야 할 신고를 확인할 때 사용
 -- --------------------------------------------------
-SELECT
-    i.incident_id,
-    i.incident_type,
-    i.incident_status,
-    COALESCE(u.user_name, '관리자 직접 접수')                              AS reporter,
-    b.bicycle_id,
-    bt.bicycleType_name                                                     AS bike_type,
-    i.description,
-    i.reported_at,
-    TIMESTAMPDIFF(HOUR, i.reported_at, NOW())                              AS hours_pending,
-    a.staff_name                                                            AS assigned_staff
-FROM IncidentReport i
-LEFT JOIN User        u  ON i.user_id    = u.user_id
-JOIN      Bicycle     b  ON i.bicycle_id = b.bicycle_id
-JOIN      BicycleType bt ON b.type_id    = bt.bicycleType_id
-LEFT JOIN AdminStaff  a  ON i.staff_id   = a.staff_id
-WHERE i.incident_status IN ('접수', '처리중')
-ORDER BY i.reported_at DESC;
+SELECT * FROM vw_pending_incidents
+ORDER BY reported_at DESC;  -- sql/views/views.sql의 vw_pending_incidents와 SELECT 절 동일
 
 
 -- --------------------------------------------------

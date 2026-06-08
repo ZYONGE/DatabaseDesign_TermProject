@@ -87,12 +87,15 @@ This database design covers the following core functions:
 ├── docs/
 │   ├── erd/                 # ERD diagrams (DFD, logical, physical)
 │   ├── design.md            # DB design document (entities, relations, triggers)
-│   └── crud_matrix.md       # CRUD matrix by feature
+│   ├── crud_matrix.md       # CRUD matrix by feature
+│   └── views.md             # VIEW 명세
 ├── sql/
 │   ├── ddl/
-│   │   └── schema.sql       # CREATE TABLE, indexes, triggers
+│   │   └── DDL.sql       # CREATE TABLE, indexes, triggers
 │   ├── dml/
-│   │   └── seed.sql         # Sample / test data
+│   │   └── DML.sql   # Sample / test data
+│   ├── views/
+│   │   └── views.sql        # VIEW 정의 (source of truth)
 │   └── queries/
 │       └── queries.sql      # Operational queries (dashboard, monitoring)
 ├── LICENSE                  # MIT License
@@ -111,9 +114,8 @@ See the [LICENSE](LICENSE) file for details.
 
 ## Author
 
-Name: Jiyong Kim (ZYONGE)  
-Profile: https://github.com/ZYONGE  
+Name: 김지용(팀장), 김민준, 양예진. 이준석, 윤하원, 천세윤
 
 ## Motivation
 
-Please give me A+!!!!!!
+DataBaseDesign TermProject
