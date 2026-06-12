@@ -63,7 +63,7 @@
 |--------|------|------|------|
 | `region_id` | INT | PK, AUTO_INCREMENT | 지역 ID |
 | `region_name` | VARCHAR(50) | NOT NULL, UNIQUE | 동 이름 |
-| `created_at` | DATETIME | DEFAULT NOW() | 등록일시 |
+| `region_created_at` | DATETIME | DEFAULT NOW() | 등록일시 |
 
 ---
 
@@ -75,7 +75,7 @@
 | `bicycleType_name` | VARCHAR(50) | NOT NULL, UNIQUE | 종류명 (일반 / 어린이 / 2인용) |
 | `max_passenger` | TINYINT | NOT NULL, DEFAULT 1 | 최대 탑승 인원 |
 | `inspection_cycle` | INT | NOT NULL, DEFAULT 30 | 점검 주기 (일) |
-| `description` | TEXT | | 종류 설명 |
+| `bicycletype_description` | MEDIUMTEXT | | 종류 설명 |
 
 > 종류별 `max_passenger` 기본값: 일반 `1`, 어린이 `1`, 2인용 `2`. 어린이 자전거는 만 13세 미만 사용자만 대여 가능하다.
 
@@ -86,15 +86,15 @@
 | 컬럼명 | 타입 | 제약 | 설명 |
 |--------|------|------|------|
 | `station_id` | INT | PK, AUTO_INCREMENT | 대여소 ID |
-| `region_id` | INT | FK → Region, NOT NULL | 소속 지역 |
+| `station_region_id` | INT | FK → Region, NOT NULL | 소속 지역 |
 | `station_name` | VARCHAR(100) | NOT NULL | 대여소 명칭 |
 | `station_address` | VARCHAR(255) | NOT NULL | 주소 |
-| `contactnumber` | VARCHAR(20) | | 연락처 |
+| `station_contactnumber` | VARCHAR(20) | | 연락처 |
 | `station_latitude` | DECIMAL(10,7) | | GPS 위도 |
 | `station_longitude` | DECIMAL(10,7) | | GPS 경도 |
-| `totaldocks` | INT | DEFAULT 0 | 총 거치대 수 |
-| `station_status` | ENUM | DEFAULT '운영중' | 운영중 / 휴관 / 정비중 |
-| `created_at` | DATETIME | DEFAULT NOW() | 등록일시 |
+| `station_totaldocks` | INT | DEFAULT 0 | 총 거치대 수 |
+| `station_status` | ENUM | NOT NULL, DEFAULT '운영중' | 운영중 / 휴관 / 정비중 |
+| `station_created_at` | DATETIME | DEFAULT NOW() | 등록일시 |
 
 ---
 
@@ -103,13 +103,13 @@
 | 컬럼명 | 타입 | 제약 | 설명 |
 |--------|------|------|------|
 | `bicycle_id` | INT | PK, AUTO_INCREMENT | 자전거 ID |
-| `type_id` | INT | FK → BicycleType, NOT NULL | 자전거 종류 |
-| `bicycle_status` | ENUM | DEFAULT '정상' | 정상 / 대여중 / 정비중 / 분실 / 회수중 |
-| `station_id` | INT | FK → Station, NULL 허용 | 현재 위치 대여소 (대여중·정비중·분실·회수중 시 NULL) |
+| `bicycleType_id` | INT | FK → BicycleType, NOT NULL | 자전거 종류 |
+| `bicycle_status` | ENUM | NOT NULL, DEFAULT '정상' | 정상 / 대여중 / 정비중 / 분실 / 회수중 |
+| `bicycle_station_id` | INT | FK → Station, NULL 허용 | 현재 위치 대여소 (대여중·정비중·분실·회수중 시 NULL) |
 | `bicycle_gps_latitude` | DECIMAL(10,7) | NULL 허용 | 실시간 GPS 위도 (대여중일 때만 갱신, 반납·회수 완료 시 NULL) |
 | `bicycle_gps_longitude` | DECIMAL(10,7) | NULL 허용 | 실시간 GPS 경도 (대여중일 때만 갱신, 반납·회수 완료 시 NULL) |
 | `bicycle_gps_updated_at` | DATETIME | NULL 허용 | GPS 최종 갱신 일시 |
-| `bicycle_registerd_at` | DATETIME | DEFAULT NOW() | 등록일시 |
+| `bicycle_registered_at` | DATETIME | DEFAULT NOW() | 등록일시 |
 
 ---
 
@@ -122,7 +122,7 @@
 | `user_birth_date` | DATE | NOT NULL | 생년월일 |
 | `user_phone` | VARCHAR(20) | NOT NULL, UNIQUE | 연락처 |
 | `user_address` | VARCHAR(255) | | 주소 |
-| `user_status` | ENUM | DEFAULT '정상' | 정상 / 정지 |
+| `user_status` | ENUM | NOT NULL, DEFAULT '정상' | 정상 / 정지 |
 | `user_created_at` | DATETIME | DEFAULT NOW() | 등록일시 |
 
 ---
@@ -134,7 +134,7 @@
 | `staff_id` | INT | PK, AUTO_INCREMENT | 관리자 ID |
 | `staff_name` | VARCHAR(50) | NOT NULL | 성명 |
 | `staff_phone` | VARCHAR(20) | NOT NULL, UNIQUE | 연락처 |
-| `station_id` | INT | FK → Station, NULL 허용 | 담당 대여소 |
+| `staff_station_id` | INT | FK → Station, NULL 허용 | 담당 대여소 |
 | `staff_is_active` | TINYINT(1) | DEFAULT 1 | 재직 여부 |
 | `staff_created_at` | DATETIME | DEFAULT NOW() | 등록일시 |
 
@@ -145,13 +145,13 @@
 | 컬럼명 | 타입 | 제약 | 설명 |
 |--------|------|------|------|
 | `rental_id` | INT | PK, AUTO_INCREMENT | 대여 ID |
-| `user_id` | INT | FK → User, NOT NULL | 이용 사용자 |
-| `bicycle_id` | INT | FK → Bicycle, NOT NULL | 대여 자전거 |
+| `rental_user_id` | INT | FK → User, NOT NULL | 이용 사용자 |
+| `rental_bicycle_id` | INT | FK → Bicycle, NOT NULL | 대여 자전거 |
 | `start_station_id` | INT | FK → Station, NOT NULL | 대여 시작 대여소 |
-| `end_station_id` | INT | FK → Station, NULL 허용 | 반납 대여소 (대여중 NULL) |
-| `start_time` | DATETIME | NOT NULL | 대여 시작 일시 |
-| `end_time` | DATETIME | NULL 허용 | 반납 일시 |
-| `rental_status` | ENUM | DEFAULT '대여중' | 대여중 / 반납 / 미반납 |
+| `return_station_id` | INT | FK → Station, NULL 허용 | 반납 대여소 (대여중 NULL) |
+| `rental_start_time` | DATETIME | NOT NULL | 대여 시작 일시 |
+| `rental_end_time` | DATETIME | NULL 허용 | 반납 일시 |
+| `rental_status` | ENUM | NOT NULL, DEFAULT '대여중' | 대여중 / 반납 / 미반납 |
 
 ---
 
@@ -160,14 +160,14 @@
 | 컬럼명 | 타입 | 제약 | 설명 |
 |--------|------|------|------|
 | `incident_id` | INT | PK, AUTO_INCREMENT | 신고 ID |
-| `user_id` | INT | FK → User, NULL 허용 | 신고자 (NULL = 관리자 직접 접수) |
-| `bicycle_id` | INT | FK → Bicycle, NULL 허용 | 신고 대상 자전거 |
+| `incident_user_id` | INT | FK → User, NULL 허용 | 신고자 (NULL = 관리자 직접 접수) |
+| `incident_bicycle_id` | INT | FK → Bicycle, NULL 허용 | 신고 대상 자전거 |
 | `incident_type` | ENUM | NOT NULL | 고장 / 방치 / 분실 / 기타 |
-| `description` | TEXT | | 신고 내용 |
-| `reported_at` | DATETIME | DEFAULT NOW() | 신고 일시 |
-| `incident_status` | ENUM | DEFAULT '접수' | 접수 / 처리중 / 완료 |
-| `staff_id` | INT | FK → AdminStaff, NOT NULL | 담당 관리자 |
-| `resolved_at` | DATETIME | NULL 허용 | 처리 완료 일시 |
+| `incident_description` | TEXT | | 신고 내용 |
+| `incident_reported_at` | DATETIME | DEFAULT NOW() | 신고 일시 |
+| `incident_status` | ENUM | NOT NULL, DEFAULT '접수' | 접수 / 처리중 / 완료 |
+| `incident_staff_id` | INT | FK → AdminStaff, NOT NULL | 담당 관리자 |
+| `incident_resolved_at` | DATETIME | NULL 허용 | 처리 완료 일시 |
 
 ---
 
@@ -178,13 +178,13 @@
 | 컬럼명 | 타입 | 제약 | 설명 |
 |--------|------|------|------|
 | `maintenance_id` | INT | PK, AUTO_INCREMENT | 정비 ID |
-| `bicycle_id` | INT | FK → Bicycle, NOT NULL | 정비 자전거 |
-| `incident_id` | INT | FK → IncidentReport, NULL 허용 | 연계 신고 (정기점검 의뢰 시 NULL) |
+| `maintenance_bicycle_id` | INT | FK → Bicycle, NOT NULL | 정비 자전거 |
+| `maintenance_incident_id` | INT | FK → IncidentReport, NULL 허용 | 연계 신고 (정기점검 의뢰 시 NULL) |
 | `maintenance_type` | ENUM | NOT NULL | 정기점검 / 수리 / 청소 |
-| `description` | TEXT | | 정비 의뢰 내용 |
-| `started_at` | DATETIME | NOT NULL | 정비 의뢰 일시 |
-| `ended_at` | DATETIME | NULL 허용 | 정비 완료 일시 |
-| `maintenance_status` | ENUM | DEFAULT '진행중' | 진행중 / 완료 |
+| `maintenance_description` | MEDIUMTEXT | | 정비 의뢰 내용 |
+| `maintenance_started_at` | DATETIME | NOT NULL | 정비 의뢰 일시 |
+| `maintenance_ended_at` | DATETIME | NULL 허용 | 정비 완료 일시 |
+| `maintenance_status` | ENUM | NOT NULL, DEFAULT '진행중' | 진행중 / 완료 |
 
 ---
 
@@ -193,17 +193,17 @@
 | 컬럼명 | 타입 | 제약 | 설명 |
 |--------|------|------|------|
 | `retrieve_id` | INT | PK, AUTO_INCREMENT | 회수 ID |
-| `bicycle_id` | INT | FK → Bicycle, NULL 허용 | 회수 자전거 |
-| `staff_id` | INT | FK → AdminStaff, NULL 허용 | 담당 회수 요원 (자동 생성 시 NULL, 이후 배정) |
-| `incident_id` | INT | FK → IncidentReport, NULL 허용 | 연계 신고 (자동 감지 시 NULL) |
+| `retrieve_bicycle_id` | INT | FK → Bicycle, NULL 허용 | 회수 자전거 |
+| `retrieve_staff_id` | INT | FK → AdminStaff, NULL 허용 | 담당 회수 요원 (자동 생성 시 NULL, 이후 배정) |
+| `retrieve_incident_id` | INT | FK → IncidentReport, NULL 허용 | 연계 신고 (자동 감지 시 NULL) |
 | `retrieve_latitude` | DECIMAL(10,7) | NULL 허용 | 발견 위치 위도 |
 | `retrieve_longitude` | DECIMAL(10,7) | NULL 허용 | 발견 위치 경도 |
 | `retrieve_location` | VARCHAR(255) | NULL 허용 | 발견 주소 |
-| `station_id` | INT | FK → Station, NOT NULL | 반납 목표 대여소 |
-| `retrieved_at` | DATETIME | DEFAULT NOW() | 회수 시작 일시 |
-| `completed_at` | DATETIME | NULL 허용 | 반납 완료 일시 |
+| `retrieve_station_id` | INT | FK → Station, NOT NULL | 반납 목표 대여소 |
+| `retrieved_at` | DATETIME | DEFAULT NOW() | 회수 시작 일시 (완료는 retrieve_completed_at 참조) |
+| `retrieve_completed_at` | DATETIME | NULL 허용 | 반납 완료 일시 |
 | `retrieve_reason` | ENUM | NOT NULL | 방치 / 미반납 / 구역이탈 / 기타 |
-| `retrieve_status` | ENUM | DEFAULT '진행중' | 진행중 / 완료 |
+| `retrieve_status` | ENUM | NOT NULL, DEFAULT '진행중' | 진행중 / 완료 |
 
 ---
 
@@ -212,11 +212,11 @@
 | 컬럼명 | 타입 | 제약 | 설명 |
 |--------|------|------|------|
 | `penalty_id` | INT | PK, AUTO_INCREMENT | 패널티 ID |
-| `user_id` | INT | FK → User, NOT NULL | 대상 사용자 |
-| `rental_id` | INT | FK → Rental, NOT NULL, UNIQUE | 미반납 대여 건 (건당 1개) |
+| `penalty_user_id` | INT | FK → User, NOT NULL | 대상 사용자 |
+| `penalty_rental_id` | INT | FK → Rental, NOT NULL, UNIQUE | 미반납 대여 건 (건당 1개) |
 | `penalty_days` | INT | NOT NULL | 대여 금지 일수 |
-| `ban_start` | DATE | NOT NULL | 금지 시작일 |
-| `ban_end` | DATE | NOT NULL | 금지 종료일 |
+| `penalty_ban_start` | DATE | NOT NULL | 금지 시작일 |
+| `penalty_ban_end` | DATE | NOT NULL | 금지 종료일 |
 
 ---
 
@@ -225,11 +225,11 @@
 | 컬럼명 | 타입 | 제약 | 설명 |
 |--------|------|------|------|
 | `allocation_id` | INT | PK, AUTO_INCREMENT | 배치 ID |
-| `bicycle_id` | INT | FK → Bicycle, NULL 허용 | 배치 자전거 |
-| `station_id` | INT | FK → Station, NULL 허용 | 배치 대여소 (미정 시 NULL, 확정 시 업데이트) |
-| `staff_id` | INT | FK → AdminStaff, NULL 허용 | 배치 담당자 |
+| `allocation_bicycle_id` | INT | FK → Bicycle, NULL 허용 | 배치 자전거 |
+| `allocation_station_id` | INT | FK → Station, NULL 허용 | 배치 대여소 (미정 시 NULL, 확정 시 업데이트) |
+| `allocation_staff_id` | INT | FK → AdminStaff, NULL 허용 | 배치 담당자 |
 | `allocated_at` | DATETIME | DEFAULT NOW() | 배치 일시 |
-| `note` | TEXT | | 비고 |
+| `allocation_note` | MEDIUMTEXT | | 비고 |
 
 ---
 
@@ -276,28 +276,28 @@ erDiagram
 
 | # | 부모 엔터티 | 자식 엔터티 | 카디널리티 | FK 컬럼 | 비고 |
 |---|------------|------------|-----------|---------|------|
-| 1 | Region | Station | 1:N | `Station.region_id` | 한 지역에 여러 대여소 |
-| 2 | BicycleType | Bicycle | 1:N | `Bicycle.type_id` | 종류별 자전거 분류 |
-| 3 | Station | Bicycle | 1:N | `Bicycle.station_id` | 현재 위치 (NULL 가능) |
-| 4 | Station | AdminStaff | 1:N | `AdminStaff.station_id` | 담당 대여소 (관리자 역할은 NULL 가능) |
+| 1 | Region | Station | 1:N | `Station.station_region_id` | 한 지역에 여러 대여소 |
+| 2 | BicycleType | Bicycle | 1:N | `Bicycle.bicycleType_id` | 종류별 자전거 분류 |
+| 3 | Station | Bicycle | 1:N | `Bicycle.bicycle_station_id` | 현재 위치 (NULL 가능) |
+| 4 | Station | AdminStaff | 1:N | `AdminStaff.staff_station_id` | 담당 대여소 (관리자 역할은 NULL 가능) |
 | 5 | Station | Rental | 1:N | `Rental.start_station_id` | 대여 시작 대여소 |
-| 6 | Station | Rental | 1:N | `Rental.end_station_id` | 반납 대여소 (NULL 가능, 대여중) |
-| 7 | Station | Retrieve | 1:N | `Retrieve.station_id` | 회수 목표 대여소 |
-| 8 | Station | Allocation | 1:N | `Allocation.station_id` | 배치 대여소 (NULL 가능) |
-| 9 | Bicycle | Rental | 1:N | `Rental.bicycle_id` | 자전거 대여 이력 |
-| 10 | Bicycle | IncidentReport | 1:N | `IncidentReport.bicycle_id` | 자전거 신고 이력 |
-| 11 | Bicycle | Maintenance | 1:N | `Maintenance.bicycle_id` | 자전거 정비 이력 |
-| 12 | Bicycle | Retrieve | 1:N | `Retrieve.bicycle_id` | 자전거 회수 이력 |
-| 13 | Bicycle | Allocation | 1:N | `Allocation.bicycle_id` | 자전거 배치 이력 |
-| 14 | User | Rental | 1:N | `Rental.user_id` | 사용자 대여 이력 |
-| 15 | User | IncidentReport | 1:N | `IncidentReport.user_id` | 사용자 신고 이력 (NULL 가능) |
-| 16 | User | Penalty | 1:N | `Penalty.user_id` | 사용자 패널티 이력 |
-| 17 | Rental | Penalty | 1:0..1 | `Penalty.rental_id` (UNIQUE) | 한 미반납 건당 패널티 1건 |
-| 18 | AdminStaff | IncidentReport | 1:N | `IncidentReport.staff_id` | 담당 배정 |
-| 19 | AdminStaff | Retrieve | 1:N | `Retrieve.staff_id` | 회수 담당자 (NULL 가능) |
-| 20 | AdminStaff | Allocation | 1:N | `Allocation.staff_id` | 배치 담당자 (NULL 가능) |
-| 21 | IncidentReport | Maintenance | 1:0..1 | `Maintenance.incident_id` (NULL 가능) | 신고 기반 정비 외주 연계 |
-| 22 | IncidentReport | Retrieve | 1:0..1 | `Retrieve.incident_id` (NULL 가능) | 신고 기반 회수 연계 |
+| 6 | Station | Rental | 1:N | `Rental.return_station_id` | 반납 대여소 (NULL 가능, 대여중) |
+| 7 | Station | Retrieve | 1:N | `Retrieve.retrieve_station_id` | 회수 목표 대여소 |
+| 8 | Station | Allocation | 1:N | `Allocation.allocation_station_id` | 배치 대여소 (NULL 가능) |
+| 9 | Bicycle | Rental | 1:N | `Rental.rental_bicycle_id` | 자전거 대여 이력 |
+| 10 | Bicycle | IncidentReport | 1:N | `IncidentReport.incident_bicycle_id` | 자전거 신고 이력 |
+| 11 | Bicycle | Maintenance | 1:N | `Maintenance.maintenance_bicycle_id` | 자전거 정비 이력 |
+| 12 | Bicycle | Retrieve | 1:N | `Retrieve.retrieve_bicycle_id` | 자전거 회수 이력 |
+| 13 | Bicycle | Allocation | 1:N | `Allocation.allocation_bicycle_id` | 자전거 배치 이력 |
+| 14 | User | Rental | 1:N | `Rental.rental_user_id` | 사용자 대여 이력 |
+| 15 | User | IncidentReport | 1:N | `IncidentReport.incident_user_id` | 사용자 신고 이력 (NULL 가능) |
+| 16 | User | Penalty | 1:N | `Penalty.penalty_user_id` | 사용자 패널티 이력 |
+| 17 | Rental | Penalty | 1:0..1 | `Penalty.penalty_rental_id` (UNIQUE) | 한 미반납 건당 패널티 1건 |
+| 18 | AdminStaff | IncidentReport | 1:N | `IncidentReport.incident_staff_id` | 담당 배정 |
+| 19 | AdminStaff | Retrieve | 1:N | `Retrieve.retrieve_staff_id` | 회수 담당자 (NULL 가능) |
+| 20 | AdminStaff | Allocation | 1:N | `Allocation.allocation_staff_id` | 배치 담당자 (NULL 가능) |
+| 21 | IncidentReport | Maintenance | 1:0..1 | `Maintenance.maintenance_incident_id` (NULL 가능) | 신고 기반 정비 외주 연계 |
+| 22 | IncidentReport | Retrieve | 1:0..1 | `Retrieve.retrieve_incident_id` (NULL 가능) | 신고 기반 회수 연계 |
 
 ---
 
@@ -309,7 +309,7 @@ erDiagram
 
 1. `User.user_status = '정상'`
 2. 해당 사용자의 `Rental.rental_status = '대여중'`인 레코드가 없어야 함 (1인 1대 제한)
-3. 해당 사용자의 `Penalty` 중 `ban_start ≤ CURRENT_DATE AND ban_end ≥ CURRENT_DATE`인 레코드가 없어야 함
+3. 해당 사용자의 `Penalty` 중 `penalty_ban_start ≤ CURRENT_DATE AND penalty_ban_end ≥ CURRENT_DATE`인 레코드가 없어야 함
 4. `Bicycle.bicycle_status = '정상'`이어야 함
 5. `TIMESTAMPDIFF(YEAR, User.user_birth_date, CURRENT_DATE) < 13`(만 13세 미만, 초등학생 이하)인 경우 `BicycleType.bicycleType_name = '어린이'` 자전거만 대여 가능
 
@@ -322,9 +322,9 @@ erDiagram
 ```
 [대여 요청]
   └─▶ 조건 검증 (7.1)
-      └─▶ Rental INSERT (rental_status = '대여중', end_station_id = NULL)
+      └─▶ Rental INSERT (rental_status = '대여중', return_station_id = NULL)
           └─▶ Bicycle.bicycle_status → '대여중'
-              Bicycle.station_id → NULL
+              Bicycle.bicycle_station_id → NULL
               Bicycle.bicycle_gps_latitude / bicycle_gps_longitude → 단말기 갱신 시작
 ```
 
@@ -337,11 +337,11 @@ erDiagram
 ```
 [반납 요청]
   └─▶ Rental UPDATE
-        end_station_id = 반납 대여소 (시흥시 내 임의 운영 중 대여소)
-        end_time = NOW()
+        return_station_id = 반납 대여소 (시흥시 내 임의 운영 중 대여소)
+        rental_end_time = NOW()
         rental_status → '반납'
       └─▶ Bicycle.bicycle_status → '정상'
-          Bicycle.station_id → 반납 대여소
+          Bicycle.bicycle_station_id → 반납 대여소
           Bicycle.bicycle_gps_latitude / bicycle_gps_longitude / bicycle_gps_updated_at → NULL
 ```
 
@@ -349,16 +349,16 @@ erDiagram
 
 ### 7.4 미반납 패널티 처리
 
-- 매일 자정 배치 작업이 `rental_status = '대여중'`이며 `start_time`으로부터 **1일(24시간) 이상** 경과한 Rental을 감지한다.
+- 매일 자정 배치 작업이 `rental_status = '대여중'`이며 `rental_start_time`으로부터 **1일(24시간) 이상** 경과한 Rental을 감지한다.
 - 감지된 Rental의 `rental_status → '미반납'`
-- `n = 감지 시점 기준 경과일수 (DATEDIFF(CURRENT_DATE, DATE(start_time)))`
+- `n = 감지 시점 기준 경과일수 (DATEDIFF(CURRENT_DATE, DATE(rental_start_time)))`
 - `Penalty` 레코드 생성:
   - `penalty_days = n × 10`
-  - `ban_start = CURRENT_DATE`
-  - `ban_end = ban_start + penalty_days`
+  - `penalty_ban_start = CURRENT_DATE`
+  - `penalty_ban_end = penalty_ban_start + penalty_days`
 - `User.user_status → '정지'`
-- 패널티 기간 만료(`ban_end < CURRENT_DATE`) 시 `User.user_status → '정상'` 자동 복구
-- 동일 사용자에게 복수의 활성 패널티가 존재하는 경우, **가장 늦은 `ban_end`**를 기준으로 이용 제한을 적용한다.
+- 패널티 기간 만료(`penalty_ban_end < CURRENT_DATE`) 시 `User.user_status → '정상'` 자동 복구
+- 동일 사용자에게 복수의 활성 패널티가 존재하는 경우, **가장 늦은 `penalty_ban_end`**를 기준으로 이용 제한을 적용한다.
 
 ---
 
@@ -369,18 +369,18 @@ erDiagram
 ```
 IncidentReport 접수 (incident_type = '고장')
   └─▶ IncidentReport.incident_status → '처리중'
-      staff_id 배정 (외주 정비 조율 담당 관리자)
+      incident_staff_id 배정 (외주 정비 조율 담당 관리자)
       └─▶ Maintenance INSERT  ← 외주 정비 의뢰 등록
-            incident_id      = 해당 신고 ID
-            maintenance_type = '수리'
+            maintenance_incident_id = 해당 신고 ID
+            maintenance_type        = '수리'
             Bicycle.bicycle_status → '정비중'
-            Bicycle.station_id → NULL
+            Bicycle.bicycle_station_id → NULL
           └─▶ 외주 업체 정비 완료 시
                 Maintenance.maintenance_status → '완료'
-                Maintenance.ended_at          = NOW()
-                IncidentReport.incident_status → '완료'
-                IncidentReport.resolved_at     = NOW()
-                Bicycle.bicycle_status         → '정상'
+                Maintenance.maintenance_ended_at = NOW()
+                IncidentReport.incident_status   → '완료'
+                IncidentReport.incident_resolved_at = NOW()
+                Bicycle.bicycle_status           → '정상'
 ```
 
 #### 방치 신고 → 회수 연계
@@ -389,12 +389,12 @@ IncidentReport 접수 (incident_type = '고장')
 IncidentReport 접수 (incident_type = '방치')
   └─▶ 해당 자전거의 retrieve_status = '진행중'인 Retrieve가 없을 경우에만
       IncidentReport.incident_status → '처리중'
-      staff_id 배정 (운영요원)
+      incident_staff_id 배정 (운영요원)
       └─▶ Retrieve INSERT
-            incident_id     = 해당 신고 ID
-            retrieve_reason = '방치'
-            staff_id        = 배정된 staff_id
-            retrieve_status = '진행중'
+            retrieve_incident_id = 해당 신고 ID
+            retrieve_reason      = '방치'
+            retrieve_staff_id    = 배정된 incident_staff_id
+            retrieve_status      = '진행중'
             Bicycle.bicycle_status → '회수중'
 ```
 
@@ -404,7 +404,7 @@ IncidentReport 접수 (incident_type = '방치')
 IncidentReport 접수 (incident_type = '분실')
   └─▶ IncidentReport.incident_status → '처리중'
       Bicycle.bicycle_status → '분실'
-      Bicycle.station_id → NULL
+      Bicycle.bicycle_station_id → NULL
       Bicycle.bicycle_gps_latitude / bicycle_gps_longitude / bicycle_gps_updated_at → NULL
       (회수 또는 발견 확인 후 Retrieve를 통해 복구)
 ```
@@ -422,22 +422,22 @@ IncidentReport 접수 (incident_type = '분실')
             해당 자전거의 retrieve_status = '진행중'인 Retrieve가 이미 존재하면 → 중단
             존재하지 않으면:
               Retrieve INSERT
-                bicycle_id         = 해당 자전거
-                staff_id           = NULL  (이후 관리자가 배정)
-                incident_id        = NULL
-                retrieve_latitude  = Bicycle.bicycle_gps_latitude  (이탈 시점 좌표)
-                retrieve_longitude = Bicycle.bicycle_gps_longitude
-                retrieve_location  = 역지오코딩 주소
-                retrieve_reason    = '구역이탈'
-                retrieve_status    = '진행중'
+                retrieve_bicycle_id  = 해당 자전거
+                retrieve_staff_id    = NULL  (이후 관리자가 배정)
+                retrieve_incident_id = NULL
+                retrieve_latitude    = Bicycle.bicycle_gps_latitude  (이탈 시점 좌표)
+                retrieve_longitude   = Bicycle.bicycle_gps_longitude
+                retrieve_location    = 역지오코딩 주소
+                retrieve_reason      = '구역이탈'
+                retrieve_status      = '진행중'
               Bicycle.bicycle_status → '회수중'
-          └─▶ 관리자가 Retrieve.staff_id 배정 (운영요원)
+          └─▶ 관리자가 Retrieve.retrieve_staff_id 배정 (운영요원)
               └─▶ 회수 완료 시
-                    Retrieve.completed_at    = NOW()
-                    Retrieve.retrieve_status → '완료'
-                    Bicycle.station_id       → Retrieve.station_id
+                    Retrieve.retrieve_completed_at = NOW()
+                    Retrieve.retrieve_status       → '완료'
+                    Bicycle.bicycle_station_id     → Retrieve.retrieve_station_id
                     Bicycle.bicycle_gps_latitude / bicycle_gps_longitude / bicycle_gps_updated_at → NULL
-                    Bicycle.bicycle_status   → '정상'
+                    Bicycle.bicycle_status         → '정상'
 ```
 
 ---
@@ -446,12 +446,12 @@ IncidentReport 접수 (incident_type = '분실')
 
 ```
 Allocation INSERT
-  (station_id가 NOT NULL인 경우)
-  └─▶ Bicycle.station_id → Allocation.station_id
+  (allocation_station_id가 NOT NULL인 경우)
+  └─▶ Bicycle.bicycle_station_id → Allocation.allocation_station_id
       Bicycle.bicycle_status → '정상'
 ```
 
-> `station_id = NULL`인 배치는 이후 `station_id`가 확정되는 시점에 Bicycle을 업데이트한다.
+> `allocation_station_id = NULL`인 배치는 이후 `allocation_station_id`가 확정되는 시점에 Bicycle을 업데이트한다.
 
 ---
 
@@ -491,7 +491,7 @@ Allocation INSERT
 | 분리된 엔터티 | 분리 전 위치 | 이행적 종속 제거 내용 |
 |--------------|------------|-------------------|
 | `Region` | `Station` 내 `region_name` 반복 | `Station → region_id → region_name` 종속 제거 |
-| `BicycleType` | `Bicycle` 내 `bicycleType_name`, `max_passenger`, `inspection_cycle` 반복 | `Bicycle → type_id → {bicycleType_name, max_passenger, ...}` 제거 |
+| `BicycleType` | `Bicycle` 내 `bicycleType_name`, `max_passenger`, `inspection_cycle` 반복 | `Bicycle → bicycleType_id → {bicycleType_name, max_passenger, ...}` 제거 |
 | `Penalty` | `Rental` 또는 `User` 내 패널티 정보 포함 시 | 독립적 패널티 이력 관리로 이행 종속 제거 |
 | `Maintenance` | `IncidentReport` 내 정비 정보 포함 시 | 신고 없이도 정기점검 독립 생성 가능 |
 | `User.is_minor` 제거 | `User` 내 `is_minor` 저장 시 | `user_id → user_birth_date → is_minor` 이행적 종속 제거 — 대여 시점 `user_birth_date` 실시간 계산으로 대체 |
@@ -506,15 +506,15 @@ Allocation INSERT
 
 | 테이블 | 인덱스 컬럼 | 목적 |
 |--------|-----------|------|
-| Station | `(region_id)`, `(station_status)` | 지역별 대여소 조회, 운영 상태 필터링 |
-| Bicycle | `(type_id)`, `(bicycle_status)`, `(station_id)` | 상태·위치별 자전거 조회 |
+| Station | `(station_region_id)`, `(station_status)` | 지역별 대여소 조회, 운영 상태 필터링 |
+| Bicycle | `(bicycleType_id)`, `(bicycle_status)`, `(bicycle_station_id)` | 상태·위치별 자전거 조회 |
 | Bicycle | `(bicycle_status, bicycle_gps_updated_at)` | 구역 이탈 감시 대상 필터링 (대여중 + 최근 갱신) |
-| Rental | `(user_id)`, `(bicycle_id)`, `(rental_status)` | 사용자별 대여 조회 |
-| Rental | `(start_station_id)`, `(end_station_id)` | 대여소별 이용 통계 |
-| Penalty | `(user_id, ban_start, ban_end)` | 활성 패널티 유효성 검증 |
-| IncidentReport | `(bicycle_id)`, `(incident_status)` | 자전거별 신고 현황 조회 |
-| Maintenance | `(bicycle_id)`, `(maintenance_status)` | 자전거별 정비 현황 조회 |
-| Retrieve | `(bicycle_id, retrieve_status)` | 자전거별 진행중 회수 중복 방지 조회 |
+| Rental | `(rental_user_id)`, `(rental_bicycle_id)`, `(rental_status)` | 사용자별 대여 조회 |
+| Rental | `(start_station_id)`, `(return_station_id)` | 대여소별 이용 통계 |
+| Penalty | `(penalty_user_id, penalty_ban_start, penalty_ban_end)` | 활성 패널티 유효성 검증 |
+| IncidentReport | `(incident_bicycle_id)`, `(incident_status)` | 자전거별 신고 현황 조회 |
+| Maintenance | `(maintenance_bicycle_id)`, `(maintenance_status)` | 자전거별 정비 현황 조회 |
+| Retrieve | `(retrieve_bicycle_id, retrieve_status)` | 자전거별 진행중 회수 중복 방지 조회 |
 
 ---
 

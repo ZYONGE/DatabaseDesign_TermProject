@@ -57,7 +57,7 @@
 - **참조 테이블:** Penalty, User, Rental
 - **주요 항목:** 사용자 정보, 패널티 일수, 정지 시작·종료일, 잔여 정지일수, 관련 대여 건
 - **실무 활용:** 대여 요청 시 **자격 검증**(지금 빌릴 수 있는가)과 **민원 응대**(정지 사유·해제일 안내)에 사용한다.
-- **설계 포인트:** `ban_start <= CURDATE() AND (ban_end IS NULL OR ban_end >= CURDATE())` 로 현재 활성 패널티만 노출. 이미 해제된 사용자는 자동으로 목록에서 빠진다.
+- **설계 포인트:** `penalty_ban_start <= CURDATE() AND (penalty_ban_end IS NULL OR penalty_ban_end >= CURDATE())` 로 현재 활성 패널티만 노출. 이미 해제된 사용자는 자동으로 목록에서 빠진다.
 
 ### VIEW 4 — `vw_bicycle_type_summary` (자전거 종류별 가동 현황)
 
@@ -85,7 +85,7 @@
 - **참조 테이블:** Bicycle, BicycleType, Maintenance
 - **주요 항목:** 자전거 ID·종류·상태, 총 정비 횟수, 유형별 횟수(수리/정기점검/청소), 최근 정비 일시
 - **실무 활용:** 자전거 한 대의 **건강 기록부**. 수리 횟수가 비정상적으로 많으면 폐차 후보로 분류하고, BicycleType의 점검 주기와 최근 정비일을 비교해 점검 시기가 지난 차량을 가려낸다.
-- **설계 포인트:** `LEFT JOIN Maintenance` 로 정비 이력이 없는 자전거도 포함, `MAX(started_at)` 로 최근 정비일 추출.
+- **설계 포인트:** `LEFT JOIN Maintenance` 로 정비 이력이 없는 자전거도 포함, `MAX(maintenance_started_at)` 로 최근 정비일 추출.
 
 ### VIEW 8 — `vw_user_rental_summary` (사용자 대여 이력 요약)
 

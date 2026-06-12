@@ -96,8 +96,8 @@ This database design covers the following core functions:
 │   │   └── DML.sql   # Sample / test data
 │   ├── views/
 │   │   └── views.sql        # VIEW 정의 (source of truth)
-│   └── queries/
-│       └── queries.sql      # Operational queries (dashboard, monitoring)
+│   └── Query/
+│       └── Query.sql        # Operational queries (dashboard, monitoring)
 ├── LICENSE                  # MIT License
 ├── .gitignore
 └── README.md
