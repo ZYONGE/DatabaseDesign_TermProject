@@ -67,7 +67,7 @@ CREATE TABLE Bicycle (
     bicycle_id              INT           NOT NULL AUTO_INCREMENT,
     bicycle_status          ENUM('정상','대여중','정비중','분실','회수중')
                                           NOT NULL DEFAULT '정상',
-    bicycle_registerd_at    DATETIME               DEFAULT NOW()  COMMENT '등록일시',
+    bicycle_registered_at    DATETIME               DEFAULT NOW()  COMMENT '등록일시',
     bicycle_gps_latitude    DECIMAL(10,7)          DEFAULT NULL   COMMENT 'GPS 위도',
     bicycle_gps_longitude   DECIMAL(10,7)          DEFAULT NULL   COMMENT 'GPS 경도',
     bicycle_gps_updated_at  DATETIME               DEFAULT NULL   COMMENT 'GPS 최종 갱신일시',
