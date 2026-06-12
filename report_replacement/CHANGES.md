@@ -7,10 +7,10 @@ pages are superseded and which replacement source file to use.
 
 | File | Replaces | Notes |
 |------|----------|-------|
-| `appendix_DDL.sql` | Report appendix DDL (approx. pp. 60–65) | Verbatim copy of current `sql/ddl/DDL.sql` |
-| `appendix_views.sql` | Report appendix VIEW definitions (approx. pp. 38–45) | Verbatim copy of current `sql/views/views.sql` |
-| `table_spec_corrected.md` | Report Table 기술서 | All 12 tables regenerated from DDL catalog; see corrections below |
-| `CHANGES.md` | This file | Checklist for team when re-exporting |
+| `sql/ddl/DDL.sql` | Report appendix DDL (approx. pp. 60–65) | Single source of truth for schema |
+| `sql/views/views.sql` | Report appendix VIEW definitions (approx. pp. 38–45) | Single source of truth for VIEWs |
+| `report_replacement/table_spec_corrected.md` | Report Table 기술서 | All 12 tables regenerated from DDL catalog; see corrections below |
+| `report_replacement/CHANGES.md` | This file | Checklist for team when re-exporting |
 
 ---
 
@@ -19,11 +19,11 @@ pages are superseded and which replacement source file to use.
 ### DDL appendix (pp. 60–65)
 - The appended DDL used **old, unprefixed column names** (e.g., `type_id`, `station_id`,
   `region_id`, `user_id`, `bicycle_id`, `ban_start`, `ban_end`, etc.).
-- Replace with `appendix_DDL.sql` (属性명 전역 유일 적용 버전).
+- Replace with `sql/ddl/DDL.sql` (속성명 전역 유일 적용 버전).
 
 ### VIEW appendix (pp. 38–45)
 - The VIEW definitions referenced old column names.
-- Replace with `appendix_views.sql`.
+- Replace with `sql/views/views.sql`.
 
 ### Table 기술서
 The following semantic errors existed in the original Table 기술서 (some of which may also
