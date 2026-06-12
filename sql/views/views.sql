@@ -1,17 +1,16 @@
 -- ==============================================
 -- 시흥시 공공 자전거 대여 서비스 VIEW (속성명 전역 유일 적용)
 -- DBMS : MySQL 8.0 / InnoDB / utf8mb4
+-- 뷰 명명 규칙 : 테이블과 동일하게 PascalCase, 역할이 드러나는 이름 사용
 -- ==============================================
 
 USE siheung_bicycle1;
 
 -- -----------------------------------------------
--- [VIEW 1] 대여소별 자전거 현황
--- [변경] s.region_id → s.station_region_id
---        s.totaldocks → s.station_totaldocks
---        b.station_id → b.bicycle_station_id
+-- [VIEW 1] StationBicycleStatus (대여소별 자전거 현황)
+-- 대여소마다 소속 지역, 거치대 수, 상태별 자전거 보유 대수를 집계
 -- -----------------------------------------------
-CREATE OR REPLACE VIEW vw_station_bicycle_summary AS
+CREATE OR REPLACE VIEW StationBicycleStatus AS
 SELECT
     rg.region_name,
     s.station_id,
@@ -31,13 +30,10 @@ GROUP BY rg.region_name, s.station_id, s.station_name, s.station_status, s.stati
 
 
 -- -----------------------------------------------
--- [VIEW 2] 현재 대여중인 자전거 현황
--- [변경] r.user_id → r.rental_user_id
---        r.bicycle_id → r.rental_bicycle_id
---        r.start_time → r.rental_start_time
---        b.type_id → b.bicycleType_id
+-- [VIEW 2] CurrentRentalStatus (현재 대여중 현황)
+-- 대여중인 건의 사용자·자전거·시작 대여소와 경과 시간, 미반납 위험 경고 표시
 -- -----------------------------------------------
-CREATE OR REPLACE VIEW vw_active_rentals AS
+CREATE OR REPLACE VIEW CurrentRentalStatus AS
 SELECT
     r.rental_id,
     u.user_id,
@@ -62,13 +58,10 @@ WHERE r.rental_status = '대여중';
 
 
 -- -----------------------------------------------
--- [VIEW 3] 미반납 패널티 대상자 현황
--- [변경] p.user_id → p.penalty_user_id
---        p.rental_id → p.penalty_rental_id
---        p.ban_start → p.penalty_ban_start
---        p.ban_end → p.penalty_ban_end
+-- [VIEW 3] ActivePenaltyUser (패널티 적용중 사용자)
+-- 현재 대여 금지 기간 중인 사용자와 남은 금지 일수, 원인 대여 건 조회
 -- -----------------------------------------------
-CREATE OR REPLACE VIEW vw_active_penalties AS
+CREATE OR REPLACE VIEW ActivePenaltyUser AS
 SELECT
     u.user_id,
     u.user_name,
@@ -88,10 +81,10 @@ WHERE p.penalty_ban_start <= CURDATE()
 
 
 -- -----------------------------------------------
--- [VIEW 4] 자전거 종류별 가동 현황
--- [변경] b.type_id → b.bicycleType_id
+-- [VIEW 4] BicycleTypeUtilization (자전거 종류별 가동 현황)
+-- 종류별 전체 대수, 상태별 대수, 가동률(%) 집계
 -- -----------------------------------------------
-CREATE OR REPLACE VIEW vw_bicycle_type_summary AS
+CREATE OR REPLACE VIEW BicycleTypeUtilization AS
 SELECT
     bt.bicycleType_id,
     bt.bicycleType_name,
@@ -113,15 +106,10 @@ GROUP BY bt.bicycleType_id, bt.bicycleType_name, bt.max_passenger, bt.inspection
 
 
 -- -----------------------------------------------
--- [VIEW 5] 미처리 신고 현황
--- [변경] i.user_id → i.incident_user_id
---        i.bicycle_id → i.incident_bicycle_id
---        i.description → i.incident_description
---        i.reported_at → i.incident_reported_at
---        i.staff_id → i.incident_staff_id
---        b.type_id → b.bicycleType_id
+-- [VIEW 5] UnresolvedIncident (미처리 신고 현황)
+-- 접수·처리중 상태인 고장/민원 신고와 경과 시간, 담당 관리자 조회
 -- -----------------------------------------------
-CREATE OR REPLACE VIEW vw_pending_incidents AS
+CREATE OR REPLACE VIEW UnresolvedIncident AS
 SELECT
     i.incident_id,
     i.incident_type,
@@ -142,13 +130,10 @@ WHERE i.incident_status IN ('접수', '처리중');
 
 
 -- -----------------------------------------------
--- [VIEW 6] 진행중인 회수 현황
--- [변경] rv.bicycle_id → rv.retrieve_bicycle_id
---        rv.staff_id → rv.retrieve_staff_id
---        rv.station_id → rv.retrieve_station_id
---        b.type_id → b.bicycleType_id
+-- [VIEW 6] OngoingRetrieve (진행중인 회수 현황)
+-- 회수 진행중인 자전거의 발견 위치(GPS·주소), 담당 요원, 목표 대여소 조회
 -- -----------------------------------------------
-CREATE OR REPLACE VIEW vw_active_retrievals AS
+CREATE OR REPLACE VIEW OngoingRetrieve AS
 SELECT
     rv.retrieve_id,
     rv.retrieve_reason,
@@ -171,12 +156,10 @@ WHERE rv.retrieve_status = '진행중';
 
 
 -- -----------------------------------------------
--- [VIEW 7] 자전거별 정비 이력
--- [변경] m.bicycle_id → m.maintenance_bicycle_id
---        m.started_at → m.maintenance_started_at
---        b.type_id → b.bicycleType_id
+-- [VIEW 7] BicycleMaintenanceHistory (자전거별 정비 이력 요약)
+-- 자전거마다 정비 횟수를 유형별로 집계하고 최근 정비일 표시
 -- -----------------------------------------------
-CREATE OR REPLACE VIEW vw_bicycle_maintenance AS
+CREATE OR REPLACE VIEW BicycleMaintenanceHistory AS
 SELECT
     b.bicycle_id,
     bt.bicycleType_name,
@@ -193,11 +176,10 @@ GROUP BY b.bicycle_id, bt.bicycleType_name, b.bicycle_status;
 
 
 -- -----------------------------------------------
--- [VIEW 8] 사용자 대여 이력 요약
--- [변경] r.user_id → r.rental_user_id
---        r.start_time → r.rental_start_time
+-- [VIEW 8] UserRentalSummary (사용자별 대여 이력 요약)
+-- 사용자마다 총 대여 횟수, 반납/미반납/대여중 건수, 마지막 대여일 집계
 -- -----------------------------------------------
-CREATE OR REPLACE VIEW vw_user_rental_summary AS
+CREATE OR REPLACE VIEW UserRentalSummary AS
 SELECT
     u.user_id,
     u.user_name,
@@ -211,3 +193,16 @@ SELECT
 FROM User u
 LEFT JOIN Rental r ON u.user_id = r.rental_user_id
 GROUP BY u.user_id, u.user_name, u.user_phone, u.user_status;
+
+
+-- ==============================================
+-- 뷰 생성 확인용 조회
+-- ==============================================
+SELECT * FROM StationBicycleStatus;
+SELECT * FROM CurrentRentalStatus;
+SELECT * FROM ActivePenaltyUser;
+SELECT * FROM BicycleTypeUtilization;
+SELECT * FROM UnresolvedIncident;
+SELECT * FROM OngoingRetrieve;
+SELECT * FROM BicycleMaintenanceHistory;
+SELECT * FROM UserRentalSummary;
